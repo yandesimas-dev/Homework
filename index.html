@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Renata's Plan B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one narrow lesson column, a sticky road-sign header with timer + stage dots; each stage is a stack of task cards. */
+:root{
+  --bg:#EEF2F4; --surface:#FFFFFF; --ink:#13293D; --muted:#5B6C7B; --line:#D3DCE2;
+  --accent:#F2A93B; --accent-ink:#3A2500; --road:#1F4E6B; --head:#1F4E6B;
+  --ok:#1E8A5A; --ok-bg:#E2F4EA; --bad:#C2413A; --bad-bg:#FBE7E5; --almost:#9A6A00; --almost-bg:#FFF2D4;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1A23; --surface:#172633; --ink:#E7EEF3; --muted:#9AAEBD; --line:#2A3D4D;
+    --accent:#F2B04F; --accent-ink:#2B1B00; --road:#8EC3E3; --head:#173A52;
+    --ok:#5CCB94; --ok-bg:#163527; --bad:#F08A82; --bad-bg:#3A1F1E; --almost:#F2C35A; --almost-bg:#3A2F14;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1A23; --surface:#172633; --ink:#E7EEF3; --muted:#9AAEBD; --line:#2A3D4D;
+  --accent:#F2B04F; --accent-ink:#2B1B00; --road:#8EC3E3; --head:#173A52;
+  --ok:#5CCB94; --ok-bg:#163527; --bad:#F08A82; --bad-bg:#3A1F1E; --almost:#F2C35A; --almost-bg:#3A2F14;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 var(--body);
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+
+.top{position:sticky;top:0;z-index:5;background:var(--head);color:#fff;
+  padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+  padding-top:calc(10px + env(safe-area-inset-top,0px));margin-top:calc(-1 * env(safe-area-inset-top,0px))}
+.top-in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.brand{font-family:var(--display);font-weight:800;font-size:18px;white-space:nowrap;color:#fff}
+.brand small{display:block;font-family:var(--body);font-weight:400;font-size:12px;opacity:.8;letter-spacing:.02em}
+.dots{display:flex;gap:6px;flex:1;justify-content:center;min-width:0}
+.dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}
+.dot.done{background:#fff}
+.dot.now{background:#F2A93B;box-shadow:0 0 0 3px rgba(242,169,59,.35)}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;background:rgba(255,255,255,.14);border-radius:8px;padding:4px 8px;font-size:15px;white-space:nowrap}
+.timer.over{background:#F2A93B;color:#3A2500}
+.iconbtn{border:1px solid rgba(255,255,255,.45);background:transparent;color:#fff;border-radius:8px;padding:4px 10px;font-size:14px}
+.tbar{height:4px;background:rgba(255,255,255,.18);margin-top:8px;border-radius:2px;overflow:hidden;max-width:720px;margin-inline:auto}
+.tbar i{display:block;height:100%;width:0;background:#F2A93B;transition:width 1s linear}
+
+main{max-width:720px;margin:0 auto;padding-block:20px 120px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.stagehead{display:grid;gap:6px;margin-bottom:18px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stagehead h2{font-size:30px;font-weight:800}
+.stagehead p{margin:0;color:var(--muted)}
+.section{display:grid;gap:12px;margin:26px 0 8px}
+.section h3{font-size:19px;font-weight:700}
+.section > p{margin:0;color:var(--muted);font-size:15px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:10px;min-width:0}
+.list{display:grid;gap:10px}
+
+.sent{font-size:18px}
+.blank{display:inline-block;min-width:78px;border-bottom:2px dashed var(--muted);text-align:center;padding:0 6px;font-weight:700;color:var(--muted)}
+.blank.ok{border-bottom:2px solid var(--ok);color:var(--ok);background:var(--ok-bg);border-radius:6px 6px 0 0}
+.pt{font-size:14px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 14px;font-weight:700;font-size:16px;transition:transform .1s}
+.chip:hover:not(:disabled){border-color:var(--road)}
+.chip:active:not(:disabled){transform:scale(.96)}
+.chip.bad{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+.chip.ok{border-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.chip:disabled{cursor:default;opacity:.55}
+.chip.ok:disabled{opacity:1}
+.chip.used{opacity:.3;text-decoration:line-through}
+.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;font-size:16px}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt:disabled{cursor:default}
+.hint{font-size:14px;border-radius:8px;padding:8px 10px;background:var(--almost-bg);color:var(--ink)}
+.hint b{color:var(--almost)}
+.fb{font-size:15px;border-radius:8px;padding:9px 11px}
+.fb.ok{background:var(--ok-bg)} .fb.ok b{color:var(--ok)}
+.fb.bad{background:var(--bad-bg)} .fb.bad b{color:var(--bad)}
+.fb.almost{background:var(--almost-bg)} .fb.almost b{color:var(--almost)}
+mark{background:var(--accent);color:var(--accent-ink);border-radius:3px;padding:0 2px}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+.story{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 8px}
+.story h3{font-size:24px;font-weight:800;margin-bottom:8px}
+.story p{margin:0 0 12px;font-size:18px;line-height:1.7}
+.w{border:0;background:none;padding:0;font:inherit;color:inherit;border-bottom:2px solid var(--accent);cursor:help}
+.gloss{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:15px;max-width:min(92vw,420px);z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+
+.btn{text-decoration:none;border:0;border-radius:10px;padding:11px 18px;font-weight:700;font-size:16px;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.road{background:var(--road);color:var(--surface)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:18px;height:18px;flex:none}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.foot-in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px;justify-content:space-between}
+.foot .count{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+
+.match-beg{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);text-align:left;width:100%}
+.match-beg.active{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.match-beg.ok{border-color:var(--ok);background:var(--ok-bg)}
+.match-beg .end{color:var(--ok);font-weight:700}
+
+.built{min-height:52px;border:2px dashed var(--line);border-radius:10px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tile{border:1.5px solid var(--road);background:var(--surface);border-radius:8px;padding:5px 11px;font-weight:700;font-size:16px}
+.tile.ghosted{visibility:hidden}
+
+.speak .say{font-size:20px;font-weight:700}
+.speak .ph{color:var(--muted);font-size:15px}
+.heard{font-size:16px}
+.heard .hit{color:var(--ok);font-weight:700}
+.heard .miss{color:var(--bad);text-decoration:underline wavy}
+.mic.listening{background:var(--bad);color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.7}}
+
+textarea{width:100%;min-height:64px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);resize:vertical;font-size:17px}
+input[type=text]{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);font-size:18px}
+
+.intro h1{font-size:clamp(34px,8vw,52px);font-weight:800;letter-spacing:-.01em}
+.intro .lead{font-size:18px;color:var(--muted);margin:10px 0 0;max-width:60ch}
+.route{list-style:none;margin:22px 0;padding:0;display:grid;gap:0;border-left:3px dashed var(--road);margin-left:8px}
+.route li{position:relative;padding:6px 0 14px 22px;display:flex;justify-content:space-between;gap:12px}
+.route li::before{content:"";position:absolute;left:-9px;top:11px;width:15px;height:15px;border-radius:50%;background:var(--surface);border:3px solid var(--road)}
+.route b{font-family:var(--display);font-size:18px}
+.route span{color:var(--muted);font-size:14px;display:block}
+.route em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.shield{display:inline-grid;place-items:center;width:46px;height:50px;background:var(--surface);color:var(--ink);border:3px solid var(--ink);border-radius:6px 6px 22px 22px;font-family:var(--display);font-weight:800;line-height:1;font-size:12px;margin-bottom:10px}
+.shield b{font-size:20px}
+
+.sheet{position:fixed;inset:0;z-index:30;background:rgba(10,20,30,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet-in{background:var(--surface);width:100%;max-width:720px;max-height:85vh;overflow:auto;border-radius:16px 16px 0 0;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+.score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.score{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.score .n{font-family:var(--display);font-weight:800;font-size:28px;font-variant-numeric:tabular-nums}
+.score .l{color:var(--muted);font-size:14px}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;background:var(--ok)}
+.big{font-family:var(--display);font-weight:800;font-size:56px;line-height:1}
+pre.report{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px;max-height:260px;overflow:auto}
+.checks{list-style:none;padding:0;margin:0;display:grid;gap:4px;font-size:15px}
+.checks li::before{content:"○ ";color:var(--muted)}
+.checks li.on::before{content:"● ";color:var(--ok)}
+.banner{background:var(--almost-bg);border-radius:10px;padding:10px 12px;font-size:15px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:440px){.brand small{display:none}.stagehead h2{font-size:26px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">Plan B<small>used to · supposed to · yet · still</small></div>
+    <div class="dots" id="dots"></div>
+    <div class="timer" id="timer" title="Tempo usado / tempo sugerido">00:00</div>
+    <button class="iconbtn" id="tipsBtn" type="button">Dicas</button>
+  </div>
+  <div class="tbar"><i id="tbar"></i></div>
+</header>
+<main id="app"></main>
+<footer class="foot" id="foot" hidden>
+  <div class="foot-in">
+    <span class="count" id="count"></span>
+    <button class="btn primary" id="nextBtn" type="button">Continuar</button>
+  </div>
+</footer>
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-in">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <h3 style="font-size:22px">Quadro de consulta</h3>
+      <button class="btn ghost" id="sheetClose" type="button">Fechar</button>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Palavra</th><th>Quando usar</th><th>Exemplo</th></tr></thead>
+      <tbody>
+        <tr><td><b>still</b></td><td>ainda: continua acontecendo</td><td>He still lives in São Paulo.</td></tr>
+        <tr><td><b>yet</b></td><td>no fim da negativa: ainda não aconteceu</td><td>I didn't eat yet.</td></tr>
+        <tr><td><b>yet</b></td><td>no fim da pergunta: já</td><td>Did you eat yet?</td></tr>
+        <tr><td><b>not yet</b></td><td>resposta curta: ainda não</td><td>Did she call? Not yet.</td></tr>
+        <tr><td><b>already</b></td><td>já</td><td>Are you already in São Paulo?</td></tr>
+        <tr><td><b>used to</b></td><td>costumava: fazia antes e não faz mais</td><td>I used to go to the gym.</td></tr>
+        <tr><td><b>didn't use to</b></td><td>negativa e pergunta sem o D</td><td>Did you use to go to the gym?</td></tr>
+        <tr><td><b>was / were supposed to</b></td><td>era para…, mas não aconteceu</td><td>I was supposed to call you, but I forgot.</td></tr>
+        <tr><td><b>-ed</b></td><td>só ganha sílaba (-id) depois de som de t ou d</td><td>moved (múvd) · needed (nídid)</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<div class="gloss" id="gloss" hidden></div>
+
+<script>
+"use strict";
+/* ---------- Configuração da professora ---------- */
+// Coloque o WhatsApp da professora com DDI e DDD, só números (ex.: "5511999999999").
+// Vazio = a aluna escolhe o contato na hora de enviar.
+const TEACHER_WHATSAPP = "";
+const SUGGESTED_MIN = 20;
+
+/* ---------- Ícones ---------- */
+const ICON = {
+  play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>',
+  slow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg>',
+  stop:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'
+};
+
+/* ---------- Helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+function h(tag, props = {}, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "html") el.innerHTML = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(c));
+  return el;
+}
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const shake = el => { el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake"); };
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+
+/* ---------- Estado ---------- */
+const KEY = "planb-dever-v1";
+const fresh = () => ({ name: "", stage: -1, elapsed: 0, scores: {}, errors: {}, writing: "", selfCheck: false });
+let S = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch { return null; } })();
+const hadSaved = !!(S && S.stage >= 0);
+if (!S) S = fresh();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+
+let stageTotal = 0;
+function record(stage, key, pts, err) {
+  S.scores[stage] ??= {};
+  S.errors[stage] ??= {};
+  if (key in S.scores[stage]) return;
+  S.scores[stage][key] = pts;
+  if (err) S.errors[stage][key] = err;
+  save(); updateFoot();
+}
+const answered = st => Object.keys(S.scores[st] || {}).length;
+
+/* ---------- Texto e fala ---------- */
+function canonNumbers(s) {
+  const n = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
+  return s.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/g, m => n[m]);
+}
+function norm(s) {
+  s = s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[‘’´`]/g, "'");
+  s = s.replace(/\bwon'?t\b/g, "will not").replace(/\bcan'?t\b/g, "can not").replace(/\bcannot\b/g, "can not")
+       .replace(/n't\b/g, " not")
+       .replace(/\b(did|do|does|was|were|is|are|has|have|had|could|would|should)nt\b/g, "$1 not")
+       .replace(/\bi'?m\b/g, "i am").replace(/'re\b/g, " are").replace(/'ll\b/g, " will").replace(/'ve\b/g, " have")
+       .replace(/\b(he|she|it|that|what|there)'s\b/g, "$1 is").replace(/\blet's\b/g, "let us").replace(/'d\b/g, " would")
+       .replace(/'/g, "").replace(/[^a-z0-9 ]+/g, " ");
+  s = canonNumbers(s);
+  s = s.replace(/(\d+) ?(o clock|a ?m|p ?m)\b/g, "$1")
+       .replace(/\b(angry|irritated|annoyed|mad|upset|furious)\b/g, "pissed off")
+       .replace(/\b(at|in) (the )?church\b/g, "at church")
+       .replace(/\bat home\b/g, "home")
+       .replace(/\b(too much|so much|very much)\b/g, "a lot")
+       .replace(/\b(phone|telephone|ring)\b/g, "call")
+       .replace(/\bat (the office|my job)\b/g, "at work")
+       .replace(/\bwork anymore\b/g, "work")
+       .replace(/\s+/g, " ").trim();
+  return s;
+}
+function lev(a, b) {
+  const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+const sim = (a, b) => 1 - lev(a, b) / Math.max(a.length, b.length, 1);
+// marca quais palavras do modelo apareceram na resposta (LCS por palavra)
+function lcsFlags(exp, got) {
+  const m = exp.length, n = got.length, d = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = m - 1; i >= 0; i--) for (let j = n - 1; j >= 0; j--)
+    d[i][j] = (exp[i] === got[j] || sim(exp[i], got[j]) >= .8) ? d[i + 1][j + 1] + 1 : Math.max(d[i + 1][j], d[i][j + 1]);
+  const flags = new Array(m).fill(false); let i = 0, j = 0;
+  while (i < m && j < n) {
+    if (exp[i] === got[j] || sim(exp[i], got[j]) >= .8) { flags[i] = true; i++; j++; }
+    else if (d[i + 1][j] >= d[i][j + 1]) i++; else j++;
+  }
+  return flags;
+}
+function diffHTML(model, answer) {
+  const words = model.split(/\s+/), got = norm(answer).split(" ");
+  const flags = lcsFlags(words.map(w => norm(w)), got);
+  return words.map((w, i) => flags[i] || !norm(w) ? esc(w) : `<mark>${esc(w)}</mark>`).join(" ");
+}
+
+let voice = null;
+function pickVoice() {
+  if (!("speechSynthesis" in window)) return null;
+  const vs = speechSynthesis.getVoices().filter(v => /^en[-_]US/i.test(v.lang));
+  return vs.find(v => /Samantha|Google US English|Aria|Jenny|Ava/i.test(v.name)) || vs[0] || null;
+}
+if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = () => { voice = pickVoice(); };
+function speak(text, rate = .92, onend) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  voice = voice || pickVoice();
+  if (voice) u.voice = voice;
+  u.lang = "en-US"; u.rate = rate;
+  if (onend) u.onend = u.onerror = onend;
+  speechSynthesis.speak(u);
+}
+const listenBtn = (text, label = "Ouvir", rate) =>
+  h("button", { class: "btn ghost", type: "button", onclick: () => speak(text, rate), html: (rate && rate < .8 ? ICON.slow : ICON.play) + label });
+
+/* ---------- Componentes de exercício ---------- */
+function chipItem(stage, key, { sentence, options, answer, hint, pt, listen }) {
+  const parts = sentence.split("___");
+  const blank = h("span", { class: "blank" }, " ");
+  const hintEl = h("div", { class: "hint", hidden: true });
+  let wrong = false;
+  const btns = options.map(o => h("button", { class: "chip", type: "button", onclick: e => {
+    const b = e.currentTarget;
+    if (o === answer) {
+      blank.textContent = o; blank.classList.add("ok"); b.classList.add("ok");
+      btns.forEach(x => x.disabled = true);
+      if (listen) speak(parts.join(o).replace(/\s+/g, " "));
+      record(stage, key, wrong ? 0 : 1, wrong ? `${parts.join("[" + answer + "]").trim()}` : null);
+    } else {
+      wrong = true; b.classList.add("bad"); shake(b);
+      if (hint) { hintEl.innerHTML = "<b>Dica:</b> " + hint; hintEl.hidden = false; }
+    }
+  } }, o));
+  return h("div", { class: "card" },
+    h("div", { class: "sent" }, parts[0], blank, parts.slice(1).join("___")),
+    pt ? h("div", { class: "pt" }, pt) : null,
+    h("div", { class: "chips" }, btns), hintEl);
+}
+
+function mcItem(stage, key, { q, options, answer, why }) {
+  const fb = h("div", { class: "fb ok", hidden: true });
+  let wrong = false;
+  const btns = shuffle(options).map(o => h("button", { class: "opt", type: "button", onclick: e => {
+    const b = e.currentTarget;
+    if (o === answer) {
+      b.classList.add("ok"); btns.forEach(x => x.disabled = true);
+      fb.innerHTML = "<b>Isso!</b> " + esc(why || ""); fb.hidden = !why;
+      record(stage, key, wrong ? 0 : 1, wrong ? `${q} → ${answer}` : null);
+    } else { wrong = true; b.classList.add("bad"); b.disabled = true; shake(b); }
+  } }, o));
+  return h("div", { class: "card" }, h("div", { class: "sent" }, h("b", {}, q)), h("div", { class: "list" }, btns), fb);
+}
+
+function matchBlock(stage, pairs) {
+  // pairs: [{beg, end}]
+  let active = 0;
+  const wrongs = new Set();
+  const begEls = pairs.map((p, i) => h("button", { class: "match-beg", type: "button", onclick: () => setActive(i) },
+    h("span", {}, p.beg + " "), h("span", { class: "end" }, "…")));
+  const endBtns = shuffle(pairs.map((p, i) => ({ t: p.end, i }))).map(({ t, i }) =>
+    h("button", { class: "chip", type: "button", onclick: e => pick(e.currentTarget, i) }, t));
+  function setActive(i) {
+    if (begEls[i].classList.contains("ok")) return;
+    active = i; begEls.forEach((b, k) => b.classList.toggle("active", k === i));
+  }
+  function pick(btn, i) {
+    if (active == null) return;
+    if (i === active) {
+      const b = begEls[i];
+      b.classList.remove("active"); b.classList.add("ok"); b.lastChild.textContent = pairs[i].end;
+      btn.disabled = true; btn.classList.add("used");
+      record(stage, "match" + i, wrongs.has(i) ? 0 : 1, wrongs.has(i) ? `${pairs[i].beg} ${pairs[i].end}` : null);
+      const next = begEls.findIndex(x => !x.classList.contains("ok"));
+      active = next < 0 ? null : next; if (next >= 0) setActive(next);
+    } else { wrongs.add(active); btn.classList.add("bad"); shake(btn); setTimeout(() => btn.classList.remove("bad"), 600); }
+  }
+  setTimeout(() => setActive(0));
+  return h("div", { class: "card" },
+    h("div", { class: "pt" }, "A frase destacada está esperando o final. Toque no final certo."),
+    h("div", { class: "list" }, begEls), h("div", { class: "chips" }, endBtns));
+}
+
+function tileItem(stage, key, { answer, pt, extra = [], hint }) {
+  const words = answer.split(" ");
+  const pool = shuffle(words.concat(extra)).map(w => ({ w }));
+  const built = [];
+  let tries = 0, solved = false;
+  const poolEl = h("div", { class: "chips" }), builtEl = h("div", { class: "built" }), fb = h("div", { class: "fb", hidden: true });
+  const check = h("button", { class: "btn road", type: "button", onclick: doCheck }, "Conferir");
+  const clear = h("button", { class: "btn ghost", type: "button", onclick: () => { if (solved) return; built.length = 0; draw(); } }, "Limpar");
+  function draw() {
+    poolEl.replaceChildren(...pool.map(t => h("button", { class: "tile" + (built.includes(t) ? " ghosted" : ""), type: "button",
+      onclick: () => { if (!solved && !built.includes(t)) { built.push(t); draw(); } } }, t.w)));
+    builtEl.replaceChildren(...(built.length ? built.map(t => h("button", { class: "tile", type: "button",
+      onclick: () => { if (!solved) { built.splice(built.indexOf(t), 1); draw(); } } }, t.w)) : [h("span", { class: "pt" }, "Toque nas palavras para montar a frase")]));
+    check.disabled = solved || built.length < words.length - 1;
+    poolEl.hidden = check.hidden = clear.hidden = solved;
+  }
+  function doCheck() {
+    tries++;
+    const got = built.map(t => t.w).join(" ");
+    if (got === answer) {
+      solved = true; fb.className = "fb ok"; fb.innerHTML = "<b>Perfeito!</b>"; fb.hidden = false;
+      speak(answer); record(stage, key, tries === 1 ? 1 : .5, tries === 1 ? null : `Montar: ${answer}`); draw();
+    } else if (tries < 2) {
+      fb.className = "fb almost"; fb.innerHTML = "<b>Quase.</b> " + esc(hint); fb.hidden = false; shake(builtEl);
+    } else {
+      solved = true; fb.className = "fb bad"; fb.innerHTML = "<b>Resposta:</b> " + esc(answer); fb.hidden = false;
+      record(stage, key, 0, `Montar: ${answer}`); draw();
+    }
+  }
+  draw();
+  return h("div", { class: "card" }, h("div", { class: "pt" }, pt), builtEl, poolEl, h("div", { class: "row" }, check, clear), fb);
+}
+
+/* ---------- Tradução com margem de erro ---------- */
+const TRAPS = [
+  [/\bdid (not )?(\w+ ){0,3}used to\b/, "Depois de did / didn't, escreva <b>use to</b> (sem o D)."],
+  [/\b(i|he|she|it) were supposed\b|\b(we|you|they) was supposed\b/, "Confira o was / were: I, he, she → <b>was</b>; we, you, they → <b>were</b>."],
+  [/\bsuppose to\b/, "É <b>supposed</b> to, com D no final."],
+  [/^(i|you|he|she|it|we|they) supposed to\b|\b(but|and) (i|you|he|she|it|we|they) supposed to\b/, "Falta o <b>was / were</b> antes de supposed to."],
+  [/\bdid (not )?(\w+ ){0,2}(met|knew|arrived|ate|moved|lived|wanted|needed|got|bought|went|called|visited|finished|talked)\b/, "Com did / didn't, o verbo volta para a forma do dicionário."],
+  [/^yet\b/, "<b>Yet</b> vai no fim da frase."],
+  [/^(?!.*\bdid\b).*\b(i|you|he|she|we|they) use to\b/, "Na afirmativa é <b>used to</b>, com D."]
+];
+function grade(input, item) {
+  const n = norm(input);
+  if (!n) return null;
+  for (const [re, msg] of TRAPS) if (re.test(n)) return { status: "wrong", msg };
+  for (const g of item.kw || []) {
+    if (!g.words.some(w => new RegExp("\\b" + norm(w) + "\\b").test(n))) return { status: "wrong", msg: g.hint };
+  }
+  let best = { s: -1, a: item.alts[0] };
+  for (const a of item.alts) {
+    const s = sim(n, norm(a));
+    if (s > best.s) best = { s, a };
+  }
+  if (best.s === 1) return { status: "ok", best: best.a };
+  if (best.s >= .85) return { status: "almost", best: best.a };
+  return { status: "wrong", best: best.a, msg: item.hint || "Compare com o quadro de dicas e tente de novo." };
+}
+function translateItem(stage, key, item) {
+  let tries = 0, done = false;
+  const ta = h("textarea", { id: "tr-" + key, rows: 2, autocapitalize: "sentences", autocomplete: "off", spellcheck: "false", placeholder: "Escreva em inglês…" });
+  const fb = h("div", { class: "fb", hidden: true });
+  const btn = h("button", { class: "btn road", type: "button", onclick: go }, "Conferir");
+  ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go(); } });
+  function finish(pts, err) { done = true; ta.readOnly = true; btn.disabled = true; record(stage, key, pts, err); }
+  function go() {
+    if (done) return;
+    const r = grade(ta.value, item);
+    if (!r) { shake(ta); return; }
+    tries++;
+    fb.hidden = false;
+    const model = item.alts[0];
+    if (r.status === "ok") {
+      fb.className = "fb ok";
+      fb.innerHTML = "<b>Correto!</b>" + (r.best !== model ? ` Outra forma: <i>${esc(model)}</i>` : "");
+      speak(model); finish(tries === 1 ? 1 : .5, tries === 1 ? null : `${item.pt} → ${model}`);
+    } else if (r.status === "almost") {
+      fb.className = "fb almost";
+      fb.innerHTML = `<b>Aceito, com um detalhe:</b> ${diffHTML(r.best, ta.value)}`;
+      speak(r.best); finish(tries === 1 ? 1 : .5, tries === 1 ? null : `${item.pt} → ${model}`);
+    } else if (tries < 2) {
+      fb.className = "fb bad"; fb.innerHTML = "<b>Ainda não.</b> " + r.msg + " Tente de novo.";
+      shake(ta); ta.focus();
+    } else {
+      fb.className = "fb bad"; fb.innerHTML = `<b>Resposta:</b> ${diffHTML(model, ta.value)}` + (r.msg ? `<br>${r.msg}` : "");
+      speak(model); finish(0, `${item.pt} → ${model} (escreveu: "${ta.value.trim()}")`);
+    }
+  }
+  return h("div", { class: "card" }, h("div", { class: "sent" }, h("b", {}, item.pt)), ta, h("div", { class: "row" }, btn), fb);
+}
+
+/* ---------- Pronúncia ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let micBlocked = !SR;
+function speakItem(stage, key, { text, ph, keyWord, tip }) {
+  let tries = 0, done = false, rec = null;
+  const heard = h("div", { class: "heard", hidden: true });
+  const fb = h("div", { class: "fb", hidden: true });
+  const mic = h("button", { class: "btn primary mic", type: "button", onclick: toggle, html: ICON.mic + "Falar" });
+  const skip = h("button", { class: "btn ghost", type: "button", onclick: () => finish(0, `Pronúncia pulada: ${text}`) }, "Pular");
+  const selfRow = h("div", { class: "row", hidden: !micBlocked },
+    h("span", { class: "pt", style: "flex-basis:100%" }, "Ouça, repita 3 vezes em voz alta e avalie você mesma:"),
+    h("button", { class: "btn road", type: "button", onclick: () => { S.selfCheck = true; finish(1, null, "Ótimo! Continue repetindo no dia a dia."); } }, "Falei igual"),
+    h("button", { class: "btn ghost", type: "button", onclick: () => { S.selfCheck = true; finish(.5, `Treinar pronúncia: ${text} ${ph}`, "Combinado. Ouça mais umas vezes no modo devagar."); } }, "Preciso treinar"));
+  const micRow = h("div", { class: "row", hidden: micBlocked }, mic, skip);
+  function finish(pts, err, msg) {
+    if (done) return; done = true;
+    mic.disabled = skip.disabled = true; selfRow.querySelectorAll("button").forEach(b => b.disabled = true);
+    if (msg) { fb.className = "fb ok"; fb.innerHTML = "<b>" + esc(msg) + "</b>"; fb.hidden = false; }
+    record(stage, key, pts, err);
+  }
+  function score(transcript) {
+    const exp = norm(text).split(" "), got = norm(transcript).split(" ");
+    const flags = lcsFlags(exp, got);
+    const ratio = flags.filter(Boolean).length / exp.length;
+    const keyOk = got.includes(norm(keyWord));
+    return { ratio, keyOk, flags, exp };
+  }
+  function toggle() {
+    if (rec) { rec.stop(); return; }
+    speechSynthesis?.cancel?.();
+    rec = new SR(); rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 5;
+    mic.classList.add("listening"); mic.innerHTML = ICON.stop + "Ouvindo…";
+    let gotResult = false;
+    rec.onresult = e => {
+      gotResult = true;
+      const alts = Array.from(e.results[0]).map(a => a.transcript);
+      let best = null;
+      for (const t of alts) { const s = score(t); s.t = t; if (!best || (s.keyOk && !best.keyOk) || (s.keyOk === best.keyOk && s.ratio > best.ratio)) best = s; }
+      tries++;
+      heard.hidden = false;
+      const expSet = best.exp;
+      heard.innerHTML = "Entendi: " + best.t.trim().split(/\s+/).map(w => `<span class="${expSet.includes(norm(w)) ? "hit" : "miss"}">${esc(w)}</span>`).join(" ");
+      fb.hidden = false;
+      if (best.keyOk && best.ratio >= .75) {
+        finish(1, null, tries === 1 ? "Perfeito, de primeira!" : "Agora sim!");
+      } else if (tries >= 3) {
+        fb.className = "fb bad"; fb.innerHTML = `<b>Vamos treinar este.</b> ${tip}`;
+        finish(.5 * best.ratio, `Pronúncia: ${text} ${ph}`);
+      } else {
+        fb.className = "fb almost";
+        fb.innerHTML = best.keyOk ? "<b>Quase!</b> Fale a frase inteira, sem pressa." : `<b>Não reconheci “${esc(keyWord)}”.</b> ${tip}`;
+      }
+    };
+    rec.onerror = e => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") {
+        micBlocked = true;
+        document.querySelectorAll(".mic-row").forEach(r => r.hidden = true);
+        document.querySelectorAll(".self-row").forEach(r => r.hidden = false);
+        $("#micNote") && ($("#micNote").hidden = false);
+      } else if (e.error === "no-speech") {
+        fb.hidden = false; fb.className = "fb almost"; fb.innerHTML = "<b>Não ouvi nada.</b> Toque em Falar e fale perto do celular.";
+      }
+    };
+    rec.onend = () => { rec = null; mic.classList.remove("listening"); mic.innerHTML = ICON.mic + (done ? "Falar" : "Falar de novo"); };
+    try { rec.start(); } catch { rec = null; }
+  }
+  micRow.classList.add("mic-row"); selfRow.classList.add("self-row");
+  return h("div", { class: "card speak" },
+    h("div", { class: "say" }, text), h("div", { class: "ph" }, ph),
+    h("div", { class: "row" }, listenBtn(text), listenBtn(text, "Devagar", .6)),
+    micRow, selfRow, heard, fb);
+}
+
+/* ---------- Conteúdo ---------- */
+const GLOSS = {
+  "was supposed to": "era para (mas não aconteceu)",
+  "pissed off": "irritada, brava (informal)",
+  "used to": "costumava (fazia antes, não faz mais)",
+  "aware": "ciente",
+  "enrolled": "se matriculou",
+  "still": "ainda (continua acontecendo)",
+  "roundabout": "rotatória",
+  "main goal": "objetivo principal",
+  "job rotation": "rodízio de funções",
+  "yet": "ainda não (no fim da negativa)",
+  "let you down": "te decepcionar",
+  "already": "já"
+};
+const w = t => `<button class="w" type="button" data-g="${t}">${t}</button>`;
+const STORY = [
+  `On March 26th, Renata ${w("was supposed to")} start a new job, but the company changed the date. She was ${w("pissed off")}! She ${w("used to")} work too much, and she wasn't ${w("aware")} of what can happen to people who never stop.`,
+  `When she was 18, she ${w("enrolled")} in college, moved to São Paulo and met her husband at a church activity. She knew he was the right person. He ${w("still")} has the same white car, and he still gets lost at the ${w("roundabout")} near their house.`,
+  `Her ${w("main goal")} now is a ${w("job rotation")} in another city, but she didn't get an answer ${w("yet")}. "I won't ${w("let you down")}," her boss said. Renata doesn't want to wait, so she ${w("already")} has a plan B: a trip on Route 66 with her husband. They didn't buy the tickets yet, but they will.`
+];
+const STORY_TEXT = STORY.map(p => p.replace(/<[^>]+>/g, "")).join(" ");
+
+const STAGES = [
+  { id: "reading", name: "Leitura", pillar: "Reading", min: 3, desc: "Leia e ouça a história da Renata" },
+  { id: "complete", name: "Complete", pillar: "Vocabulário e gramática", min: 4, desc: "Toque na palavra certa" },
+  { id: "build", name: "Monte", pillar: "Estrutura", min: 3, desc: "Ligue as partes e monte frases" },
+  { id: "speak", name: "Pronúncia", pillar: "Speaking", min: 4, desc: "Fale e receba correção" },
+  { id: "translate", name: "Tradução", pillar: "Writing", min: 4, desc: "Português → inglês, com margem de erro" },
+  { id: "review", name: "Revisão", pillar: "Gramática", min: 2, desc: "Certo ou errado?" }
+];
+
+function section(title, sub, ...kids) {
+  return h("div", { class: "section" }, h("h3", {}, title), sub ? h("p", {}, sub) : null, ...kids);
+}
+
+const RENDER = {
+  reading(st) {
+    let playing = false;
+    const play = h("button", { class: "btn road", type: "button", html: ICON.play + "Ouvir a história", onclick: () => {
+      if (playing) { speechSynthesis.cancel(); return; }
+      playing = true; play.innerHTML = ICON.stop + "Parar";
+      speak(STORY_TEXT, .9, () => { playing = false; play.innerHTML = ICON.play + "Ouvir a história"; });
+    } });
+    const story = h("article", { class: "story" }, h("h3", {}, "Renata's plan B"), ...STORY.map(p => h("p", { html: p })));
+    story.addEventListener("click", e => {
+      const b = e.target.closest(".w"); if (!b) return;
+      const g = $("#gloss"); g.innerHTML = `<b>${esc(b.dataset.g)}</b> = ${esc(GLOSS[b.dataset.g])}`; g.hidden = false;
+      speak(b.dataset.g);
+      clearTimeout(g._t); g._t = setTimeout(() => g.hidden = true, 3200);
+    });
+    const qs = [
+      { q: "1. What was Renata supposed to do on March 26th?", answer: "She was supposed to start a new job.", options: ["She was supposed to start a new job.", "She was supposed to move to São Paulo.", "She was supposed to buy the tickets."] },
+      { q: "2. Why was she pissed off?", answer: "Because the company changed the date.", options: ["Because the company changed the date.", "Because her husband got lost.", "Because she lost her job."] },
+      { q: "3. What did she use to do?", answer: "She used to work too much.", options: ["She used to work too much.", "She used to go to church every day.", "She used to live in another city."] },
+      { q: "4. Where did she meet her husband?", answer: "At a church activity.", options: ["At a church activity.", "At college.", "At the roundabout."] },
+      { q: "5. What does her husband still do?", answer: "He still gets lost at the roundabout.", options: ["He still gets lost at the roundabout.", "He still works at the company.", "He still lives with his parents."] },
+      { q: "6. Did she get an answer yet?", answer: "Not yet.", options: ["Not yet.", "Yes, she already got it.", "Yes, on March 26th."], why: "Ela ainda não recebeu resposta: \"she didn't get an answer yet\"." }
+    ];
+    return [
+      section("Leia em voz alta", "Leia a história uma vez em voz alta. Toque nas palavras sublinhadas para ver o significado.", h("div", { class: "row" }, play), story),
+      section("Responda", "Escolha a resposta certa.", ...qs.map((q, i) => mcItem(st, "q" + i, q))),
+      qs.length
+    ];
+  },
+
+  complete(st) {
+    const SYA = ["still", "yet", "already"];
+    const hintSYA = "<b>still</b> = continua acontecendo · <b>yet</b> = no fim da negativa ou da pergunta · <b>already</b> = já";
+    const a = [
+      ["She is 30 and she ___ lives with her parents.", "still"],
+      ["Wow, that was fast! Are you ___ in São Paulo?", "already"],
+      ["We didn't buy the tickets ___.", "yet"],
+      ["Did you call your sister ___?", "yet"],
+      ["Don't worry, I ___ finished the report.", "already"],
+      ["\"Did she get the job?\" \"Not ___.\"", "yet"],
+      ["It's midnight and they are ___ at work.", "still"],
+      ["You're early! You're ___ here!", "already"]
+    ];
+    const b = [
+      ["They ___ supposed to arrive at 6, but they arrived at 8.", "were"],
+      ["He ___ supposed to call me, but he forgot.", "was"],
+      ["We ___ supposed to travel in March, but we didn't have the money.", "were"],
+      ["The class ___ supposed to start at 9, but the teacher was late.", "was"],
+      ["My parents ___ supposed to visit us, but they didn't come.", "were"]
+    ];
+    const c = [
+      ["I ___ work on Sunday.", "won't", "não vou"],
+      ["She ___ to call you.", "doesn't want", "não quer"],
+      ["She ___ call you.", "won't", "não vai"],
+      ["We ___ to move.", "don't want", "não queremos"],
+      ["He ___ to retire.", "doesn't want", "não quer"]
+    ];
+    const VOC = ["enrolled", "aware", "roundabout", "main", "rotation", "church"];
+    const d = [
+      ["I ___ in college when I was 18.", "enrolled", "me matriculei"],
+      ["She's not ___ of what can happen to people who work too much.", "aware", "ciente"],
+      ["Turn right at the ___.", "roundabout", "rotatória"],
+      ["My ___ goal is to speak English.", "main", "principal"],
+      ["The company has a job ___ program.", "rotation", "rodízio"]
+    ];
+    const n = a.length + b.length + c.length + d.length;
+    return [
+      section("still, yet ou already?", null, ...a.map(([s, ans], i) => chipItem(st, "a" + i, { sentence: s, options: SYA, answer: ans, hint: hintSYA, listen: true }))),
+      section("was ou were?", "I, he, she, it → was · we, you, they → were", ...b.map(([s, ans], i) => chipItem(st, "b" + i, { sentence: s, options: ["was", "were"], answer: ans, hint: "Olhe quem faz a ação: um só → <b>was</b>, mais de um ou you → <b>were</b>.", listen: true }))),
+      section("don't want, doesn't want ou won't?", "want (uónt) é querer · won't (uôunt) é não vai", ...c.map(([s, ans, pt], i) => chipItem(st, "c" + i, { sentence: s, pt: `(${pt})`, options: ["don't want", "doesn't want", "won't"], answer: ans, hint: "<b>won't</b> = não vai · <b>don't / doesn't want</b> = não quer. Com she / he use <b>doesn't</b>.", listen: true }))),
+      section("Palavras da aula", null, ...d.map(([s, ans, pt], i) => chipItem(st, "d" + i, { sentence: s, pt: `(${pt})`, options: VOC, answer: ans, listen: true }))),
+      n
+    ];
+  },
+
+  build(st) {
+    const pairs = [
+      { beg: "He was supposed to retire at 57,", end: "but he still works." },
+      { beg: "We were supposed to enroll in college in March,", end: "but we didn't have the money." },
+      { beg: "She was supposed to call me,", end: "but she forgot." },
+      { beg: "They were supposed to be here at 7,", end: "but they're still at the roundabout." },
+      { beg: "The party was supposed to start at 8,", end: "but nobody arrived yet." }
+    ];
+    const tiles = [
+      { answer: "Did he use to live with his parents?", pt: "Ele costumava morar com os pais?", extra: ["used"], hint: "Com did, use to fica sem o D." },
+      { answer: "They didn't use to go to church.", pt: "Eles não costumavam ir à igreja.", extra: ["used"], hint: "Com didn't, use to fica sem o D." },
+      { answer: "Did she know the answer?", pt: "Ela sabia a resposta?", extra: ["knew"], hint: "Com did, o verbo volta para a forma do dicionário." },
+      { answer: "He didn't move to Rio.", pt: "Ele não se mudou para o Rio.", extra: ["moved"], hint: "Com didn't, o verbo volta para a forma do dicionário." }
+    ];
+    const past = [
+      ["I ___ my husband at church.", "met", ["met", "meeted", "meet"], "meet"],
+      ["She ___ the teacher.", "knew", ["knowed", "knew", "known"], "know"],
+      ["They ___ engaged in June.", "got", ["getted", "get", "got"], "get"],
+      ["She ___ to Orlando in March.", "moved", ["moved", "move", "moveded"], "move"],
+      ["We ___ our grandmother.", "visited", ["visit", "visitted", "visited"], "visit"],
+      ["I ___ to music in the car.", "listened", ["listen", "listened", "listed"], "listen"]
+    ];
+    return [
+      section("Ligue as duas partes", "Era para acontecer… mas não aconteceu.", matchBlock(st, pairs)),
+      section("Monte a frase", "Cuidado: tem uma palavra a mais que não serve.", ...tiles.map((t, i) => tileItem(st, "t" + i, t))),
+      section("Coloque no passado", null, ...past.map(([s, ans, opts, v], i) => chipItem(st, "p" + i, { sentence: s, pt: `(${v})`, options: opts, answer: ans, listen: true, hint: "meet → met · know → knew · get → got. Os outros ganham -ed." }))),
+      pairs.length + tiles.length + past.length
+    ];
+  },
+
+  speak(st) {
+    const sortV = [["listened", "sem"], ["visited", "id"], ["moved", "sem"], ["needed", "id"], ["lived", "sem"], ["wanted", "id"]];
+    const sortItems = sortV.map(([v, kind], i) => {
+      const card = chipItem(st, "s" + i, { sentence: v + " ___", options: ["sem sílaba nova", "+ sílaba -id"], answer: kind === "sem" ? "sem sílaba nova" : "+ sílaba -id",
+        hint: "O -ed só vira sílaba (<b>-id</b>) quando o verbo termina em som de <b>t</b> ou <b>d</b>: visit, need, want." });
+      card.querySelector(".sent").prepend(h("button", { class: "btn ghost", type: "button", style: "padding:4px 10px;margin-right:8px", html: ICON.play, "aria-label": "Ouvir " + v, onclick: () => speak(v, .8) }));
+      return card;
+    });
+    const sentences = [
+      { text: "I listened to my sister.", ph: "listened (lísend): uma sílaba no -ed", keyWord: "listened", tip: "Diga <b>lísend</b>. O -ed não vira sílaba nova." },
+      { text: "They lived in São Paulo.", ph: "lived (lívd)", keyWord: "lived", tip: "Diga <b>lívd</b>, uma sílaba só. Não diga “livéd”." },
+      { text: "We moved to Rio.", ph: "moved (múvd)", keyWord: "moved", tip: "Diga <b>múvd</b>, uma sílaba só. Não diga “movéd”." },
+      { text: "I visited my sister.", ph: "visited (vízitid): aqui o -ed ganha sílaba", keyWord: "visited", tip: "Diga <b>ví-zi-tid</b>: o -ed vira <b>-id</b> porque visit termina em t." },
+      { text: "She needed a car.", ph: "needed (nídid)", keyWord: "needed", tip: "Diga <b>ní-did</b>: need termina em d, então ganha <b>-id</b>." },
+      { text: "They wanted a house.", ph: "wanted (uóntid)", keyWord: "wanted", tip: "Diga <b>uón-tid</b>. Cuidado para não falar won't (uôunt)." }
+    ];
+    const note = h("div", { class: "hint", id: "micNote", hidden: !micBlocked, html:
+      "<b>Microfone indisponível.</b> Para receber correção automática, abra este link no Chrome (Android ou computador) ou no Safari (iPhone) e permita o microfone. Por enquanto, ouça e faça a autoavaliação." });
+    return [
+      section("O -ed ganha sílaba?", "Ouça cada verbo e escolha.", ...sortItems),
+      section("Fale em voz alta", "Ouça o modelo, toque em Falar e diga a frase. Você tem 3 tentativas por frase.", note, ...sentences.map((s, i) => speakItem(st, "v" + i, s))),
+      sortV.length + sentences.length
+    ];
+  },
+
+  translate(st) {
+    const yetHint = "Para “ainda não”, use a negativa com <b>yet</b> no fim.";
+    const items = [
+      { pt: "Ela ainda não chegou.", alts: ["She didn't arrive yet.", "She hasn't arrived yet.", "She didn't get here yet.", "She hasn't got here yet.", "She hasn't gotten here yet."], kw: [{ words: ["yet"], hint: yetHint }] },
+      { pt: "Você já comeu?", alts: ["Did you eat yet?", "Did you already eat?", "Have you eaten yet?", "Have you already eaten?"], kw: [{ words: ["yet", "already"], hint: "Na pergunta, “já” pode ser <b>yet</b> (no fim) ou <b>already</b>." }] },
+      { pt: "Ele costumava trabalhar muito, mas agora ele não trabalha.", alts: ["He used to work a lot, but now he doesn't work.", "He used to work a lot, but he doesn't work now.", "He used to work hard, but now he doesn't work."], kw: [{ words: ["used to"], hint: "“Costumava” = <b>used to</b>." }] },
+      { pt: "Era para ela me ligar.", alts: ["She was supposed to call me."], kw: [{ words: ["supposed to"], hint: "“Era para…” = <b>was / were supposed to</b>." }] },
+      { pt: "Era para eu estar em casa às 6, mas eu ainda estou no trabalho.", alts: ["I was supposed to be home at 6, but I'm still at work.", "I was supposed to be home at 6, but I'm still working."], kw: [{ words: ["supposed to"], hint: "“Era para eu…” = <b>I was supposed to</b>." }, { words: ["still"], hint: "“Ainda estou” (continua) = <b>still</b>." }] },
+      { pt: "Eu conhecia o marido dela.", alts: ["I knew her husband."], kw: [{ words: ["knew", "used to know"], hint: "“Conhecia” = <b>knew</b>. <b>Met</b> é o momento em que você conheceu." }] },
+      { pt: "Eles ficaram noivos no dia 7 de junho.", alts: ["They got engaged on June 7th.", "They got engaged on the 7th of June.", "They got engaged on 7th June."], kw: [{ words: ["engaged"], hint: "“Ficar noivo” = <b>get engaged</b> (passado: got engaged)." }], hint: "Datas: primeiro o mês, depois o número com final: <b>on June 7th</b>." },
+      { pt: "Não me decepcione!", alts: ["Don't let me down!"], kw: [{ words: ["let me down"], hint: "“Decepcionar alguém” = <b>let someone down</b>." }] }
+    ];
+    return [
+      section("Traduza", "Pequenos erros de digitação e sinônimos são aceitos. Aperte Enter ou Conferir.", ...items.map((it, i) => translateItem(st, "x" + i, it))),
+      items.length
+    ];
+  },
+
+  review(st) {
+    const items = [
+      ["I used to went to the gym.", false, "I used to go to the gym."],
+      ["We didn't buy the tickets yet.", true],
+      ["I was suppose to call you.", false, "I was supposed to call you."],
+      ["Did you used to live here?", false, "Did you use to live here?"],
+      ["Are you already in São Paulo?", true],
+      ["Yet I didn't eat.", false, "I didn't eat yet."],
+      ["She supposed to pick me up.", false, "She was supposed to pick me up."],
+      ["He still lives in São Paulo.", true]
+    ];
+    return [
+      section("Certo ou errado?", "Nem todas estão erradas.", ...items.map(([s, ok, fix], i) => {
+        const fb = h("div", { class: "fb", hidden: true });
+        let done = false;
+        const pick = (said, btn) => {
+          if (done) return; done = true;
+          const right = said === ok;
+          btns.forEach(b => b.disabled = true);
+          btn.classList.add(right ? "ok" : "bad");
+          fb.hidden = false; fb.className = "fb " + (right ? "ok" : "bad");
+          fb.innerHTML = (right ? "<b>Isso!</b> " : "<b>Não.</b> ") + (ok ? "A frase está certa." : "O certo é: <i>" + esc(fix) + "</i>");
+          if (!ok) speak(fix);
+          record(st, "r" + i, right ? 1 : 0, right ? null : `${s} → ${ok ? "estava certa" : fix}`);
+        };
+        const btns = [h("button", { class: "chip", type: "button", onclick: e => pick(true, e.currentTarget) }, "Certo"),
+                      h("button", { class: "chip", type: "button", onclick: e => pick(false, e.currentTarget) }, "Errado")];
+        return h("div", { class: "card" }, h("div", { class: "sent" }, s), h("div", { class: "chips" }, btns), fb);
+      })),
+      items.length
+    ];
+  }
+};
+
+/* ---------- Telas ---------- */
+function drawDots() {
+  $("#dots").replaceChildren(...STAGES.map((s, i) => h("span", { class: "dot" + (i < S.stage || S.stage >= STAGES.length ? " done" : i === S.stage ? " now" : ""), title: s.name })));
+}
+function updateFoot() {
+  const st = STAGES[S.stage];
+  if (!st) return;
+  const n = answered(st.id);
+  $("#count").textContent = `${n} de ${stageTotal} feitas`;
+  $("#nextBtn").disabled = n < stageTotal;
+  $("#nextBtn").textContent = S.stage === STAGES.length - 1 ? "Ver resultado" : "Continuar";
+}
+function overBanner() {
+  if (S.elapsed < SUGGESTED_MIN * 60 || S.stage >= STAGES.length) return null;
+  return h("div", { class: "banner" }, h("span", {}, "Os 20 minutos sugeridos acabaram. Você pode terminar esta etapa ou ir direto para o resultado."),
+    h("button", { class: "btn ghost", type: "button", onclick: () => go(STAGES.length) }, "Ver resultado"));
+}
+function go(i) {
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  S.stage = i; save(); render(); window.scrollTo(0, 0);
+}
+function render() {
+  drawDots(); tick(true);
+  const app = $("#app");
+  if (S.stage < 0) { $("#foot").hidden = true; return app.replaceChildren(intro()); }
+  if (S.stage >= STAGES.length) { $("#foot").hidden = true; return app.replaceChildren(results()); }
+  const st = STAGES[S.stage];
+  S.scores[st.id] = {}; S.errors[st.id] = {}; save();
+  const out = RENDER[st.id](st.id);
+  stageTotal = out.pop();
+  app.replaceChildren(
+    h("div", { class: "stagehead" },
+      h("span", { class: "eyebrow" }, `Etapa ${S.stage + 1} de ${STAGES.length} · ${st.pillar} · cerca de ${st.min} min`),
+      h("h2", {}, st.name), h("p", {}, st.desc)),
+    ...[overBanner(), ...out].filter(Boolean));
+  $("#foot").hidden = false;
+  updateFoot();
+}
+$("#nextBtn").onclick = () => go(S.stage + 1);
+
+function intro() {
+  const name = h("input", { type: "text", id: "name", placeholder: "Seu nome", value: S.name, autocomplete: "given-name" });
+  const start = h("button", { class: "btn primary", type: "button", disabled: !S.name.trim(), onclick: () => {
+    S.name = name.value.trim(); S.elapsed = 0; S.scores = {}; S.errors = {}; S.writing = ""; S.selfCheck = false; go(0);
+  } }, "Começar o dever");
+  name.addEventListener("input", () => { start.disabled = !name.value.trim(); });
+  name.addEventListener("keydown", e => { if (e.key === "Enter" && name.value.trim()) start.click(); });
+  const resume = hadSaved && S.stage >= 0 ? null : null;
+  return h("section", { class: "intro" },
+    h("div", { class: "shield", html: "ROUTE<b>66</b>" }),
+    h("h1", {}, "Renata's plan B"),
+    h("p", { class: "lead" }, "Dever de casa de used to, supposed to, yet e still. Leva uns 20 minutos: você lê, completa, monta frases, fala em voz alta e traduz. No fim, manda o resultado para a professora."),
+    h("ol", { class: "route" }, STAGES.map(s => h("li", {}, h("div", {}, h("b", {}, s.name), h("span", {}, s.desc)), h("em", {}, s.min + " min")))),
+    h("div", { class: "section" }, h("label", { for: "name", class: "eyebrow" }, "Como você se chama?"), name,
+      h("p", { class: "pt" }, "Use fone ou um lugar silencioso: a etapa de pronúncia usa o microfone."),
+      h("div", { class: "row" }, start)), resume);
+}
+function resumeScreen() {
+  return h("section", { class: "intro" },
+    h("h1", {}, "Bem-vinda de volta, " + S.name + "!"),
+    h("p", { class: "lead" }, `Você parou na etapa ${S.stage >= STAGES.length ? "do resultado" : (S.stage + 1) + ": " + STAGES[S.stage].name}.`),
+    h("div", { class: "row", style: "margin-top:18px" },
+      h("button", { class: "btn primary", type: "button", onclick: () => render() }, "Continuar de onde parei"),
+      h("button", { class: "btn ghost", type: "button", onclick: () => { const n = S.name; S = fresh(); S.name = n; save(); render(); } }, "Começar de novo")));
+}
+
+function stageScore(id) {
+  const v = Object.values(S.scores[id] || {});
+  return { got: v.reduce((a, b) => a + b, 0), n: v.length };
+}
+const PAST_IRR = ["met","knew","got","went","was","were","had","did","made","bought","came","ate","took","left","began","found","felt","saw","said","told","thought","became"];
+function results() {
+  const rows = STAGES.map(s => ({ s, ...stageScore(s.id) }));
+  const got = rows.reduce((a, r) => a + r.got, 0), n = rows.reduce((a, r) => a + r.n, 0);
+  const pct = n ? Math.round(got / n * 100) : 0;
+  const errs = STAGES.flatMap(s => Object.values(S.errors[s.id] || {}).map(e => `[${s.name}] ${e}`));
+  const ta = h("textarea", { id: "writing", rows: 5, placeholder: "When I was a child, I used to…", spellcheck: "true" });
+  ta.value = S.writing || "";
+  const checks = [
+    ["used to", t => /\bused to\b|\buse to\b/.test(t)],
+    ["was / were supposed to", t => /\b(was|were) supposed to\b/.test(t)],
+    ["still", t => /\bstill\b/.test(t)],
+    ["yet no fim da frase", t => /\byet\b/.test(t)],
+    ["4 verbos no passado", t => (t.match(new RegExp("\\b(\\w+ed|" + PAST_IRR.join("|") + ")\\b", "g")) || []).filter(x => x !== "used" && x !== "supposed").length >= 4]
+  ];
+  const checkEls = checks.map(([l]) => h("li", {}, l));
+  const wc = h("span", { class: "pt" });
+  const report = h("pre", { class: "report" });
+  const mins = Math.max(1, Math.round(S.elapsed / 60));
+  function buildReport() {
+    const lines = [
+      `Dever · used to, supposed to, yet e still`,
+      `Aluna: ${S.name}`,
+      `Tempo: ${mins} min`,
+      `Resultado geral: ${pct}%`,
+      ...rows.map(r => `• ${r.s.name}: ${Math.round(r.got * 10) / 10}/${r.n}`),
+      S.selfCheck ? `(pronúncia com autoavaliação: microfone indisponível)` : null,
+      errs.length ? `\nPara revisar:\n` + errs.slice(0, 15).map(e => "- " + e).join("\n") : `\nSem erros!`,
+      S.writing.trim() ? `\nSua vez:\n${S.writing.trim()}` : null
+    ].filter(Boolean);
+    return lines.join("\n");
+  }
+  function refresh() {
+    const t = ta.value.toLowerCase();
+    checks.forEach(([, f], i) => checkEls[i].classList.toggle("on", f(t)));
+    const words = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0;
+    wc.textContent = `${words} palavras`;
+    S.writing = ta.value; save();
+    report.textContent = buildReport();
+    wa.href = `https://wa.me/${TEACHER_WHATSAPP}?text=${encodeURIComponent(report.textContent)}`;
+  }
+  const wa = h("a", { class: "btn primary", href: "#", target: "_blank", rel: "noopener" }, "Enviar no WhatsApp");
+  const copyMsg = h("span", { class: "pt" });
+  const copy = h("button", { class: "btn ghost", type: "button", onclick: async () => {
+    try { await navigator.clipboard.writeText(report.textContent); copyMsg.textContent = "Copiado."; }
+    catch { const r = document.createRange(); r.selectNodeContents(report); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); copyMsg.textContent = "Texto selecionado: copie com o menu do celular."; }
+  } }, "Copiar resultado");
+  ta.addEventListener("input", refresh);
+  setTimeout(refresh);
+  const msg = pct >= 90 ? "Excelente trabalho!" : pct >= 70 ? "Muito bem! Revise os pontos abaixo." : "Bom começo. Vale refazer amanhã.";
+  return h("section", {},
+    h("div", { class: "stagehead" }, h("span", { class: "eyebrow" }, `Chegada · ${mins} min`), h("h2", {}, msg)),
+    h("div", { class: "row", style: "gap:18px;margin-bottom:16px" }, h("div", { class: "big" }, pct + "%"), h("p", { class: "pt", style: "margin:0;max-width:36ch" }, `${S.name}, você acertou de primeira ${Math.round(got)} de ${n} itens.`)),
+    h("div", { class: "score-grid" }, rows.map(r => {
+      const p = r.n ? Math.round(r.got / r.n * 100) : 0;
+      return h("div", { class: "score" }, h("div", { class: "n" }, p + "%"), h("div", { class: "l" }, `${r.s.name} · ${r.s.pillar}`), h("div", { class: "meter" }, h("i", { style: `width:${p}%` })));
+    })),
+    errs.length ? section("Para revisar", null, h("div", { class: "card" }, h("ul", { style: "margin:0;padding-left:18px;display:grid;gap:4px" }, errs.map(e => h("li", {}, e))))) : null,
+    section("Bônus · Sua vez", "Opcional. Escreva de 3 a 5 frases sobre como a sua vida mudou. Vai junto no resultado.",
+      h("div", { class: "card" }, ta, h("div", { class: "row", style: "justify-content:space-between" }, h("ul", { class: "checks" }, checkEls), wc))),
+    section("Envie para a professora", null, report, h("div", { class: "row" }, wa, copy, copyMsg)),
+    h("div", { class: "row", style: "margin-top:24px" }, h("button", { class: "btn ghost", type: "button", onclick: () => { const nm = S.name; S = fresh(); S.name = nm; save(); render(); } }, "Refazer o dever")));
+}
+
+/* ---------- Timer ---------- */
+let lastSave = 0;
+function tick(only) {
+  if (!only && S.stage >= 0 && S.stage < STAGES.length && document.visibilityState === "visible") {
+    S.elapsed++;
+    if (S.elapsed - lastSave >= 5) { lastSave = S.elapsed; save(); }
+    if (S.elapsed === SUGGESTED_MIN * 60) render();
+  }
+  const t = $("#timer");
+  t.textContent = fmt(S.elapsed) + " / " + SUGGESTED_MIN + ":00";
+  t.classList.toggle("over", S.elapsed >= SUGGESTED_MIN * 60);
+  $("#tbar").style.width = Math.min(100, S.elapsed / (SUGGESTED_MIN * 60) * 100) + "%";
+}
+setInterval(tick, 1000);
+
+$("#tipsBtn").onclick = () => { $("#sheet").hidden = false; };
+$("#sheetClose").onclick = () => { $("#sheet").hidden = true; };
+$("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") $("#sheet").hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("#sheet").hidden = true; });
+
+if (hadSaved) { drawDots(); tick(true); $("#app").replaceChildren(resumeScreen()); }
+else render();
+</script>
+</body>
+</html>
